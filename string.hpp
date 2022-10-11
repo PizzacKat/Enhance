@@ -38,6 +38,11 @@ namespace enhance::string {
         return splits;
     }
 
+    std::string replace(std::string str, const std::string &replace, const std::string &replacement){
+        for (size_t find = str.find(replace); find != std::string::npos; find = str.find(replace, find + replacement.length())) str.replace(find, replace.length(), replacement);
+        return str;
+    }
+
     template <typename Iterator>
     bool starts_with(Iterator find_begin, Iterator find_end, Iterator str){
         for (; find_begin != find_end; str++, find_begin++) if (*find_begin != *str) return false;
@@ -55,6 +60,16 @@ namespace enhance::string {
     }
 
     std::string join(const std::vector<std::string>& str, const std::string& separator){
+        std::string string;
+        size_t s = str.size();
+        for (size_t i = 0; i < s; i++){
+            string += str[i];
+            if (i != s-1) string += separator;
+        }
+        return string;
+    }
+
+    std::string join(const std::vector<char>& str, const std::string& separator){
         std::string string;
         size_t s = str.size();
         for (size_t i = 0; i < s; i++){

@@ -46,7 +46,7 @@ namespace enhance::socket {
             FD_ZERO(&rfd);
             FD_SET(m_socket, &rfd);
             timeval tv = { 0 };
-            select(m_socket+1, &rfd, 0, 0, &tv);
+            select(m_socket+1, &rfd, nullptr, nullptr, &tv);
             if (!FD_ISSET(m_socket, &rfd))
                 return true;
             u_long n = 0;

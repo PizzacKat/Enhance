@@ -7,7 +7,7 @@ namespace enhance::tcp {
     class client : protected enhance::socket::socket {
     public:
         client() : enhance::socket::socket(){
-            set_unblocking(true);
+
         }
 
         client(const client &client) : socket(client) {

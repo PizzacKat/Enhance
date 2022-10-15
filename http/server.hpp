@@ -8,7 +8,7 @@
 #include <functional>
 #include <iostream>
 #include <regex>
-#include "base.hpp"
+#include "http.hpp"
 
 namespace enhance::http {
     class server {
@@ -49,7 +49,7 @@ namespace enhance::http {
             m_server.listen();
             std::thread connect_thread([this]() {
                 while (m_server.connected()) {
-                    tcp::client client = m_server.accept();
+                    tcp::client client = (tcp::client)m_server.accept();
                     client.set_unblocking(true);
                     std::thread client_thread{[this](const tcp::client &client) {
                         std::regex http_request_regex("([A-Za-z]+) +(.*) +HTTP/[0-9][.][0-9]\r?\n((?:.|\r?\n)*)?\r?\n");

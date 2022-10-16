@@ -40,9 +40,8 @@ namespace enhance::random {
     std::vector<T> shuffle(const std::vector<T> &vec){
         std::vector<T> s;
         s.resize(vec.size());
-        for (size_t i = 0; i < vec.size(); i++){
-            s[number(0, vec.size())] = vec[i];
-        }
+        for (size_t i = 0; i < vec.size(); i++) s[number<size_t>(0, vec.size())] = vec[i];
+        return s;
     }
 }
 

@@ -37,10 +37,16 @@ namespace enhance::random {
     }
 
     template <typename T>
-    std::vector<T> shuffle(const std::vector<T> &vec){
+    std::vector<T> shuffle(std::vector<T> vec){
         std::vector<T> s;
         s.resize(vec.size());
-        for (size_t i = 0; i < vec.size(); i++) s[number<size_t>(0, vec.size())] = vec[i];
+        for (size_t i = 0; i < s.size(); i++) {
+            size_t n = number<size_t>(0, vec.size() - 1);
+            s[i] = vec[n];
+            auto it = vec.begin();
+            std::advance(it, n);
+            vec.erase(it);
+        }
         return s;
     }
 }

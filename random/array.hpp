@@ -35,6 +35,14 @@ namespace enhance::random {
         for (T &i : vector) i = number(min, max);
         return vector;
     }
+
+    template <typename T>
+    std::vector<T> shuffle(const std::vector<T> &vec){
+        std::vector<T> s(vec.size());
+        for (size_t i = 0; i < vec.size(); i++){
+            s[number(0, vec.size())] = vec[i];
+        }
+    }
 }
 
 #endif //ENHANCE_ARRAY_HPP

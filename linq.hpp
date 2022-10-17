@@ -155,7 +155,8 @@ namespace enhance::linq {
         }
 
         bool contains(T value) const{
-            return any([&value](const T &v){return v == value;});
+            for (auto it = this->begin(); it < this->end(); it++) if (*it == value) return true;
+            return false;
         }
 
         template <typename Predicate = bool(const T &)>

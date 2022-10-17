@@ -20,42 +20,74 @@ namespace enhance::linq {
         using std::vector<T>::vector;
         vector(const std::vector<T> &vec) : std::vector<T>(vec){}
 
-        template <typename R, typename Predicate>
-        vector<R> select(Predicate pred){
-            std::vector<R> vector;
-            for (auto it = this->begin(); it < this->end(); it++) vector.push_back(pred(*it), this->end() - it);
+        template <typename Result, typename Predicate>
+        vector<Result> select(Predicate pred){
+            vector<Result> vector;
+            for (auto it = this->begin(); it < this->end(); it++) vector.push_back(pred(*it, this->end() - it));
             return vector;
         }
 
-        template <typename R, typename Predicate>
-        R aggregate(R accumulate, Predicate pred){
-            for (auto it = this->begin(); it < this->end(); it++) accumulate = pred(accumulate, *it);
-            return accumulate;
+        vector<T> concat(const vector<T> &vec){
+            vector<T> vector = *this;
+            vector.insert(vector.end(), vec.begin(), vec.end());
+            return vector;
         }
 
-        template <typename R, typename Predicate>
-        R aggregate(Predicate pred){
-            if (this->begin() == this->end()) throw exception("No elements :(");
-            R accumulate = *this->begin();
-            for (auto it = this->begin()+1; it < this->end(); it++) accumulate = pred(accumulate, *it);
-            return accumulate;
+        template <typename Result, typename Second, typename Predicate>
+        vector<Result> zip(const vector<Second> &vec, Predicate pred){
+            if (vec.count() != count()) throw exception("Vector size is not the same :(");
+            vector<Result> vector;
+            auto it1 = this->begin();
+            auto it2 = vec.begin();
+            for (; it1 < this->end(); it1++, it2++) vector.push_back(pred(*it1, *it2));
+            return vector;
         }
 
         template <typename Predicate>
         vector<T> where(Predicate pred){
-            std::vector<T> vector;
+            vector<T> vector;
             for (auto it = this->begin(); it < this->end(); it++) if (pred(*it)) vector.push_back(*it);
             return vector;
         }
 
         vector<T> skip(size_t elements){
             if (this->begin() + elements >= this->end()) throw exception("Can't skip, too much :(");
-            return linq_vector<T>(this->begin() + elements, this->end());
+            return vector<T>(this->begin() + elements, this->end());
+        }
+
+        vector<T> skip_last(size_t elements){
+            if (this->begin() >= this->end() - elements) throw exception("Can't skip, too much :(");
+            return vector<T>(this->begin(), this->end() - elements);
         }
 
         vector<T> take(size_t elements){
             if (this->begin() + elements >= this->end()) throw exception("Can't take, too much :(");
-            return linq_vector<T>(this->begin(), this->begin() + elements);
+            return vector<T>(this->begin(), this->begin() + elements);
+        }
+
+        vector<T> take_last(size_t elements){
+            if (this->begin() >= this->end() - elements) throw exception("Can't take, too much :(");
+            return vector<T>(this->end() - elements, this->end());
+        }
+
+        template <typename Result, typename Accumulator, typename Predicate, typename Selector>
+        Result aggregate(Accumulator accumulate, Predicate pred, Selector sel){
+            for (auto it = this->begin(); it < this->end(); it++) accumulate = pred(accumulate, *it);
+            return sel(accumulate);
+        }
+
+        template <typename Accumulator, typename Predicate>
+        Accumulator aggregate(Accumulator accumulate, Predicate pred){
+            for (auto it = this->begin(); it < this->end(); it++) accumulate = pred(accumulate, *it);
+            return accumulate;
+        }
+
+        template <typename Predicate>
+        T aggregate(Predicate pred){
+            if (this->begin() == this->end()) throw exception("No elements :(");
+            T accumulate = *this->begin();
+            for (auto it = this->begin()+1; it < this->end(); it++) accumulate = pred(accumulate, *it);
+            return accumulate;
         }
 
         template <typename Predicate = bool(const T&)>
@@ -82,12 +114,12 @@ namespace enhance::linq {
             return def;
         }
 
-        template <typename R, typename Predicate = R(const T &)>
-        R min(Predicate pred = [](const T &a){return a;}){
+        template <typename Result, typename Predicate = Result(const T &)>
+        Result min(Predicate pred = [](const T &a){return a;}){
             if (this->begin() == this->end()) throw exception("No elements :(");
-            R min = pred(*this->begin());
+            Result min = pred(*this->begin());
             for (auto it = this->begin()+1; it < this->end(); it++) {
-                R val = pred(*it);
+                Result val = pred(*it);
                 if (val < min) min = val;
             }
             return min;
@@ -100,12 +132,12 @@ namespace enhance::linq {
             return min;
         }
 
-        template <typename R, typename Predicate = R(const T &)>
-        R max(Predicate pred = [](const T &a){return a;}){
+        template <typename Result, typename Predicate = Result(const T &)>
+        Result max(Predicate pred = [](const T &a){return a;}){
             if (this->begin() == this->end()) throw exception("No elements :(");
-            R max = pred(*this->begin());
+            Result max = pred(*this->begin());
             for (auto it = this->begin()+1; it < this->end(); it++) {
-                R val = pred(*it);
+                Result val = pred(*it);
                 if (val > max) max = val;
             }
             return max;

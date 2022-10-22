@@ -120,7 +120,7 @@ namespace enhance::linq {
 
         enumerable<T> take(size_t elements) const{
             if (begin() + elements >= end()) throw exception("Can't take, too much :(");
-            return vector<T>(this->begin(), this->begin() + elements);
+            return enumerable<T>(this->begin(), this->begin() + elements);
         }
 
         enumerable<T> take_last(size_t elements) const{
@@ -133,13 +133,13 @@ namespace enhance::linq {
         }
 
         template <typename Result, typename Accumulator, typename Predicate, typename Selector>
-        Result aggregate(Accumulator accumulate, Predicate pred, Selector sel) const{
+        Result aggregate(Accumulator &&accumulate, Predicate pred, Selector sel) const{
             for (auto it = this->begin(); it < this->end(); it++) accumulate = pred(accumulate, *it);
             return sel(accumulate);
         }
 
         template <typename Accumulator, typename Predicate>
-        Accumulator aggregate(Accumulator accumulate, Predicate pred) const{
+        Accumulator aggregate(Accumulator &&accumulate, Predicate pred) const{
             for (auto it = this->begin(); it < this->end(); it++) accumulate = pred(accumulate, *it);
             return accumulate;
         }

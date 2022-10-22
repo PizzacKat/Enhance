@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <memory>
 
 namespace enhance::linq {
     class exception : public std::exception {
@@ -14,64 +15,121 @@ namespace enhance::linq {
         [[nodiscard]] const char * what() const noexcept override {return m_what;}
     };
 
-    template <typename T>
-    class vector : public std::vector<T> {
-    public:
-        using std::vector<T>::vector;
-        vector(const std::vector<T> &vec) : std::vector<T>(vec){}
+    template <typename T, typename Allocator = std::allocator<T>>
+    class enumerable {
+    protected:
+        Allocator m_allocator = {};
+        T *m_data = nullptr;
+        size_t m_size = 0;
 
-        template <typename Result, typename Predicate>
-        vector<Result> select(Predicate pred) const{
-            vector<Result> vector;
-            for (auto it = this->begin(); it < this->end(); it++) vector.push_back(pred(*it, this->end() - it));
-            return vector;
+        enumerable(size_t size){
+            m_size = size;
+            m_data = m_allocator.allocate(size);
+            for (size_t i = 0; i < size; i++) new(m_data + i) T();
         }
 
-        vector<T> concat(const vector<T> &vec) const{
-            vector<T> vector = *this;
-            vector.insert(vector.end(), vec.begin(), vec.end());
-            return vector;
+    public:
+        enumerable(){
+            m_size = 0;
+            m_data = nullptr;
+        }
+
+        enumerable(const enumerable &enumerable){
+            m_size = enumerable.size();
+            m_data = m_allocator.allocate(size());
+            for (size_t i = 0; i < size(); i++) new(m_data + i) T(enumerable.m_data[i]);
+        }
+
+        template <typename Iterator>
+        enumerable(Iterator start, Iterator finish){
+            m_size = finish - start;
+            m_data = m_allocator.allocate(size());
+            auto datait = begin();
+            for (auto it = start; it < finish; it++, datait++) *datait = *it;
+        }
+
+        enumerable &operator =(const enumerable &enumerable){
+            if (this == &enumerable) return *this;
+            m_allocator.deallocate(m_data, size());
+            m_size = enumerable.size();
+            m_data = m_allocator.allocate(size());
+            for (size_t i = 0; i < size(); i++) new(m_data + i) T(enumerable.m_data[i]);
+            return *this;
+        }
+
+        size_t size() const{ return m_size; }
+        virtual T &operator[](size_t i){ return m_data[i]; }
+        virtual const T &operator[](size_t i) const{ return m_data[i]; }
+        virtual T *begin(){ return m_data; }
+        virtual const T *begin() const{ return m_data; }
+        virtual T *end(){ return m_data + size(); }
+        virtual const T *end() const{ return m_data + size(); }
+
+        std::reverse_iterator<T *>rbegin(){ return std::make_reverse_iterator(end()); }
+        const std::reverse_iterator<const T *> rbegin() const{ return std::make_reverse_iterator(end()); }
+        std::reverse_iterator<T *>rend(){ return std::make_reverse_iterator(begin()); }
+        const std::reverse_iterator<const T *> rend() const{ return std::make_reverse_iterator(begin()); }
+
+        template <typename Result, typename Predicate>
+        enumerable<Result> select(Predicate pred) const{
+            enumerable<Result> array(size());
+            auto it = this->begin();
+            auto resit = array.begin();
+            for (; it < this->end(); it++, resit++) *resit = pred(*it, this->end() - it);
+            return array;
+        }
+
+        enumerable<T> concat(const enumerable<T> &e) const{
+            enumerable<T> array(size() + e.size());
+            auto resit = array.begin();
+            for (auto it = begin(); it < end(); it++, resit++) *resit = *it;
+            for (auto it = e.begin(); it < e.end(); it++, resit++) *resit = *it;
+            return array;
         }
 
         template <typename Result, typename Second, typename Predicate>
-        vector<Result> zip(const vector<Second> &vec, Predicate pred) const{
-            if (vec.count() != count()) throw exception("Vector size is not the same :(");
-            vector<Result> vector;
-            auto it1 = this->begin();
-            auto it2 = vec.begin();
-            for (; it1 < this->end(); it1++, it2++) vector.push_back(pred(*it1, *it2));
-            return vector;
+        enumerable<Result> zip(const enumerable<Second> &e, Predicate pred) const{
+            if (e.size() != size()) throw exception("Array size is not the same :(");
+            enumerable<Result> array(size());
+            auto it1 = begin();
+            auto it2 = e.begin();
+            auto resit = array.begin();
+            for (; it1 < end(); it1++, it2++, resit++) *resit = pred(*it1, *it2);
+            return array;
         }
 
         template <typename Predicate>
-        vector<T> where(Predicate pred) const{
-            vector<T> vector;
-            for (auto it = this->begin(); it < this->end(); it++) if (pred(*it)) vector.push_back(*it);
-            return vector;
+        enumerable<T> where(Predicate pred) const{
+            enumerable<T> array(size());
+            auto resit = array.begin();
+            for (auto it = this->begin(); it < this->end(); it++) if (pred(*it)) *resit++ = *it;
+            enumerable<T> newarr(resit - array.begin());
+            for (auto it1 = array.begin(), it2 = newarr.begin(); it2 < newarr.end(); it1++, it2++) *it2 = *it1;
+            return newarr;
         }
 
-        vector<T> skip(size_t elements) const{
-            if (this->begin() + elements >= this->end()) throw exception("Can't skip, too much :(");
-            return vector<T>(this->begin() + elements, this->end());
+        enumerable<T> skip(size_t elements) const{
+            if (begin() + elements >= end()) throw exception("Can't skip, too much :(");
+            return enumerable<T>(this->begin() + elements, this->end());
         }
 
-        vector<T> skip_last(size_t elements) const{
-            if (this->begin() >= this->end() - elements) throw exception("Can't skip, too much :(");
-            return vector<T>(this->begin(), this->end() - elements);
+        enumerable<T> skip_last(size_t elements) const{
+            if (begin() >= end() - elements) throw exception("Can't skip, too much :(");
+            return enumerable<T>(this->begin(), this->end() - elements);
         }
 
-        vector<T> take(size_t elements) const{
-            if (this->begin() + elements >= this->end()) throw exception("Can't take, too much :(");
+        enumerable<T> take(size_t elements) const{
+            if (begin() + elements >= end()) throw exception("Can't take, too much :(");
             return vector<T>(this->begin(), this->begin() + elements);
         }
 
-        vector<T> take_last(size_t elements) const{
+        enumerable<T> take_last(size_t elements) const{
             if (this->begin() >= this->end() - elements) throw exception("Can't take, too much :(");
-            return vector<T>(this->end() - elements, this->end());
+            return enumerable<T>(this->end() - elements, this->end());
         }
 
-        vector<T> reverse() const{
-            return vector{this->rbegin(), this->rend()};
+        enumerable<T> reverse() const{
+            return enumerable<T>{this->rbegin(), this->rend()};
         }
 
         template <typename Result, typename Accumulator, typename Predicate, typename Selector>
@@ -95,25 +153,25 @@ namespace enhance::linq {
         }
 
         template <typename Predicate = bool(const T&)>
-        T first(Predicate pred = [](const T &){return true;}) const{
+        T &first(Predicate pred = [](const T &){return true;}) const{
             for (auto it = this->begin(); it < this->end(); it++) if (pred(*it)) return *it;
             throw exception("There was no first :(");
         }
 
         template <typename Predicate = bool(const T&)>
-        T first_or_default(Predicate pred = [](const T &){return true;}, T def = {}) const{
+        T &first_or_default(Predicate pred = [](const T &){return true;}, T def = {}) const{
             for (auto it = this->begin(); it < this->end(); it++) if (pred(*it)) return *it;
             return def;
         }
 
         template <typename Predicate = bool(const T &)>
-        T last(Predicate pred = [](const T &){return true;}) const{
+        T &last(Predicate pred = [](const T &){return true;}) const{
             for (auto it = this->rbegin(); it < this->rend(); it++) if (pred(*it)) return *it;
             throw exception("There was no last :(");
         }
 
         template <typename Predicate = bool(const T &)>
-        T last_or_default(Predicate pred = [](const T &){return true;}, T def = {}) const{
+        T &last_or_default(Predicate pred = [](const T &){return true;}, T def = {}) const{
             for (auto it = this->rbegin(); it < this->rend(); it++) if (pred(*it)) return *it;
             return def;
         }
@@ -176,6 +234,35 @@ namespace enhance::linq {
             size_t count = 0;
             for (auto it = this->begin(); it < this->end(); it++) if (pred(*it)) count++;
             return count;
+        }
+
+        ~enumerable(){
+            m_allocator.deallocate(m_data, size());
+        }
+    };
+
+    template <typename T, typename Allocator = std::allocator<T>>
+    class array : public enumerable<T, Allocator> {
+        typedef enumerable<T, Allocator> Base;
+    public:
+        using Base::enumerable;
+
+        explicit array(size_t size) {
+            Base::m_data = Base::m_allocator.allocate(size);
+            for (size_t i = 0; i < size; i++) new(Base::m_data + i) T();
+        }
+
+        template<typename... Args>
+        explicit array(Args... args) {
+            Base::m_data = Base::m_allocator.allocate(sizeof...(args));
+            Base::m_size = sizeof...(args);
+            auto it = Base::m_data;
+            ((new(it++) T(args)), ...);
+        }
+
+        array &operator=(const array &array) {
+            Base::operator=(array);
+            return *this;
         }
     };
 }

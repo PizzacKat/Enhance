@@ -21,13 +21,6 @@ namespace enhance::linq {
         Allocator m_allocator = {};
         T *m_data = nullptr;
         size_t m_size = 0;
-
-        enumerable(size_t size){
-            m_size = size;
-            m_data = m_allocator.allocate(size);
-            for (size_t i = 0; i < size; i++) new(m_data + i) T();
-        }
-
     public:
         enumerable(){
             m_size = 0;
@@ -38,6 +31,12 @@ namespace enhance::linq {
             m_size = enumerable.size();
             m_data = m_allocator.allocate(size());
             for (size_t i = 0; i < size(); i++) new(m_data + i) T(enumerable.m_data[i]);
+        }
+
+        explicit enumerable(size_t size){
+            m_size = size;
+            m_data = m_allocator.allocate(size);
+            for (size_t i = 0; i < size; i++) new(m_data + i) T();
         }
 
         template <typename Iterator>
@@ -57,7 +56,7 @@ namespace enhance::linq {
             return *this;
         }
 
-        size_t size() const{ return m_size; }
+        [[nodiscard]] size_t size() const{ return m_size; }
         virtual T &operator[](size_t i){ return m_data[i]; }
         virtual const T &operator[](size_t i) const{ return m_data[i]; }
         virtual T *begin(){ return m_data; }
@@ -75,7 +74,7 @@ namespace enhance::linq {
             enumerable<Result> array(size());
             auto it = this->begin();
             auto resit = array.begin();
-            for (; it < this->end(); it++, resit++) *resit = pred(*it, this->end() - it);
+            for (; it < this->end(); it++, resit++) *resit = pred(*it, it - this->begin());
             return array;
         }
 

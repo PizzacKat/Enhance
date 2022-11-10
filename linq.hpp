@@ -40,7 +40,7 @@ namespace enhance::linq {
             m_size = finish - start;
             m_data = m_allocator.allocate(size());
             auto datait = begin();
-            for (auto it = start; it < finish; it++, datait++) *datait = *it;
+            for (auto it = start; it < finish; it++, datait++) new(datait) T(*it);
         }
 
         enumerable &operator =(const enumerable &enumerable){
@@ -93,6 +93,15 @@ namespace enhance::linq {
             return array;
         }
 
+        template <typename N>
+        enumerable<N> cast(){
+            enumerable<N> array(size());
+            auto resit = array.begin();
+            auto it = begin();
+            for (; it < end(); it++, resit++) *resit = (N)*it;
+            return array;
+        }
+
         template <typename Predicate>
         enumerable<T> where(Predicate pred) const{
             enumerable<T> array(size());
@@ -101,6 +110,12 @@ namespace enhance::linq {
             enumerable<T> newarr(resit - array.begin());
             for (auto it1 = array.begin(), it2 = newarr.begin(); it2 < newarr.end(); it1++, it2++) *it2 = *it1;
             return newarr;
+        }
+
+        template <typename Function>
+        enumerable<T> for_each(Function fnc){
+            for (auto it = begin(); it < end(); it++) fnc(*it, it - begin());
+            return *this;
         }
 
         enumerable<T> skip(size_t elements) const{
@@ -207,6 +222,13 @@ namespace enhance::linq {
             return max;
         }
 
+        T sum(){
+            if (this->begin() == this->end()) throw exception("No elements :(");
+            T n = *this->begin();
+            for (auto it = this->begin()+1; it < this->end(); it++) n += *it;
+            return n;
+        }
+
         bool contains(T value) const{
             for (auto it = this->begin(); it < this->end(); it++) if (*it == value) return true;
             return false;
@@ -242,6 +264,10 @@ namespace enhance::linq {
     public:
         using Base::enumerable;
 
+        array(const enumerable<T, Allocator>& enumerable) : Base(enumerable){
+
+        }
+
         explicit array(size_t size) {
             Base::m_data = Base::m_allocator.allocate(size);
             for (size_t i = 0; i < size; i++) new(Base::m_data + i) T();
@@ -253,6 +279,13 @@ namespace enhance::linq {
             Base::m_size = sizeof...(args);
             auto it = Base::m_data;
             ((new(it++) T(args)), ...);
+        }
+
+        static array range(T min, T max, T step){
+            std::cout << (max - min) / step << "\n";
+            enumerable<T, Allocator> enumerable((size_t)((max - min) / step)+1);
+            for (size_t n = 0; min <= max; min += step, n++) enumerable[n] = min;
+            return enumerable;
         }
 
         array &operator=(const array &array) {

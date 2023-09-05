@@ -26,7 +26,6 @@ namespace enhance::encoding {
                 if (d > 3) n |= (unsigned long long)str[i+3] << 8;
                 if (d > 4) n |= (unsigned long long)str[i+4];
                 unsigned char n1 = (n >> 35) & 0x1F;
-                std::cout << (int)n1 << "\n";
                 res += map[n1];
                 unsigned char n2 = (n >> 30) & 0x1F;
                 res += map[n2];

@@ -8,7 +8,7 @@
 
 namespace enhance::http {
     class response {
-        static inline std::regex http_response_regex{"HTTP/[0-9][.][0-9] ([0-9]+) (.*)\r?\n((?:.|\r?\n)*)?\r?\n"};
+        static inline std::regex http_response_regex{"HTTP/[0-9]+[.][0-9]+ ([0-9]+) (.*)\r?\n((?:.|\r?\n)*)?\r?\n"};
     public:
         unsigned short status_code = 200;
         std::string status = "OK";
@@ -122,4 +122,4 @@ namespace enhance::http {
     };
 }
 
-#endif //ENHANCE_BASE_HPP
+#endif //ENHANCE_HTTP_BASE_HPP

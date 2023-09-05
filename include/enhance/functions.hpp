@@ -6,22 +6,19 @@
 
 namespace enhance::functions {
     template <class Iterator, class T>
-    typename std::iterator_traits<Iterator>::value_type
-    accumulate(Iterator first, Iterator last, T init){
+    auto accumulate(Iterator first, Iterator last, T init){
         while (first != last) init += *first++;
         return init;
     }
 
     template <class Iterator, class T>
-    typename std::iterator_traits<Iterator>::value_type
-    contract(Iterator first, Iterator last, T init){
+    auto contract(Iterator first, Iterator last, T init){
         while (first != last) init -= *first++;
         return init;
     }
 
     template <class Iterator, class T>
-    typename std::iterator_traits<Iterator>::value_type
-    average(Iterator first, Iterator last, T init){
+    auto average(Iterator first, Iterator last, T init){
         size_t v = last - first;
         return functions::accumulate<Iterator, T>(first, last, init) / v;
     }
@@ -38,15 +35,15 @@ namespace enhance::functions {
     }
 
     template <class Iterator, class T>
-    inline ssize_t index_of(Iterator first, Iterator last, T val, ssize_t n = -1){
+    inline ssize_t index_of(Iterator first, Iterator last, T val){
         Iterator f = find(first, last, val);
-        return f == last ? n : f - first;
+        return f == last ? -1 : f - first;
     }
 
     template <class Iterator, class Predicate>
-    inline size_t index_if(Iterator first, Iterator last, Predicate pred, ssize_t n = -1){
+    inline size_t index_if(Iterator first, Iterator last, Predicate pred){
         Iterator f = find_if(first, last, pred);
-        return f == last ? n : f - first;
+        return f == last ? -1 : f - first;
     }
 
     template <class Iterator, class Predicate>

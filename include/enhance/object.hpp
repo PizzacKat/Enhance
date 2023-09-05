@@ -65,7 +65,6 @@ public:
         m_size = object.m_size;
         m_copy = object.m_copy;
         m_free = object.m_free;
-        m_print = object.m_print;
     }
 
     template <typename T>
